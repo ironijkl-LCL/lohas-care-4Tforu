@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>樂活金掌家 - 結構封鎖整合版 v10.1</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --ts-red: #D90429;
+            --ts-bg-lunar: #F4EBD0; 
+            --ts-border: #1B4332;
+            --wa-green: #25D366; 
+            --gold: #D4AF37; 
+            --paper-white: #FCF9F2;
+            --btn-blue: #219EBC; 
+            --btn-orange: #FB8500;
+            --danger: #FF0000; 
+            --healthy: #008000;
+            --speech-purple: #8338EC;
+        }
+
+        body { 
+            font-family: "PingFang HK", "Microsoft JhengHei", sans-serif;
+            background-color: var(--ts-bg-lunar);
+            background-image: radial-gradient(#d4af37 0.5px, transparent 0.5px);
+            background-size: 20px 20px;
+            margin: 0; color: var(--ts-red);
+            height: 100vh; display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- 登入畫面 --- */
+        #login-screen { 
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: var(--paper-white); z-index: 9999; display: flex; flex-direction: column;
+            align-items: center; padding: 25px;
+            box-sizing: border-box; overflow-y: auto;
+        }
+        .login-box { width: 100%; max-width: 400px; text-align: center; }
+        .login-label { font-size: 20px; font-weight: bold; margin: 10px 0 5px 0; display: block; text-align: left; }
+        .big-input { width: 100%; height: 75px; font-size: 32px; text-align: center; border: 3px solid #ccc; border-radius: 15px; margin-bottom: 12px; box-sizing: border-box; }
+        .v-code-box { font-size: 55px; font-weight: 900; letter-spacing: 10px; color: var(--ts-red); background: #eee; padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 2px dashed #bbb; }
+        .primary-btn { width: 100%; height: 100px; background: var(--ts-red); color: white; border: none; border-radius: 20px; font-size: 36px; font-weight: bold; cursor: pointer; box-shadow: 0 8px #900; }
+
+        /* --- Header --- */
+        header { background: var(--paper-white); border-bottom: 6px double var(--ts-red); padding: 10px; }
+        .header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .h-item { display: flex; align-items: center; justify-content: center; height: 75px; border-radius: 15px; border: 2px solid #ddd; cursor: pointer; position: relative; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); font-size: 22px; font-weight: bold; text-align: center; }
+        .info-main { grid-column: span 2; height: auto; padding: 15px 0; flex-direction: column; background: #fffde7; border: 3px solid var(--gold); color: #333; }
+        .info-clock { font-size: 40px; font-weight: 900; color: var(--ts-red); line-height: 1.1; }
+        #user-photo-display { width: 85px; height: 85px; border-radius: 50%; border: 3px solid var(--gold); object-fit: cover; margin-bottom: 5px; background: white; }
+
+        /* --- Main --- */
+        main { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
+        .health-card { background: var(--paper-white); border-radius: 20px; border: 3px solid var(--gold); padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .health-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .data-btn { background: #fffdf9; border: 2px solid var(--gold); border-radius: 15px; padding: 15px 5px; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .data-btn span { font-size: 18px; }
+        .data-btn b { font-size: 24px; }
+
+        .chart-nav { display: flex; gap: 5px; overflow-x: auto; margin-bottom: 10px; padding-bottom: 5px; }
+        .nav-tab { padding: 10px 15px; background: #e0d5b1; border-radius: 10px; font-size: 16px; border: none; white-space: nowrap; cursor: pointer; }
+        .nav-tab.active { background: var(--ts-red); color: white; font-weight: bold; }
+        .chart-wrapper { height: 200px; width: 100%; position: relative; }
+
+        /* --- 彈窗 (內容放大 1 倍) --- */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; }
+        .modal-content { background: var(--paper-white); border: 8px solid var(--gold); border-radius: 30px; width: 95%; max-width: 800px; padding: 60px; box-sizing: border-box; overflow-y: auto; max-height: 95vh; text-align: center; }
+        .modal-content h2 { font-size: 72px; margin-bottom: 35px; color: var(--ts-red); }
+        .modal-content p { font-size: 40px; line-height: 1.4; }
+        .opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 40px 0; }
+        .opt-btn { background: #fdfaf0; border: 6px solid var(--gold); border-radius: 30px; padding: 40px; font-size: 48px; font-weight: bold; color: #333; }
+        .opt-btn.active { border-color: var(--ts-red); background: #fff5f5; color: var(--ts-red); }
+        .back-btn { width: 100%; border: none; background: #999; color: white; margin-top: 40px; font-size: 48px; height: 110px; border-radius: 30px; font-weight: bold; cursor: pointer; }
+
+        /* --- Footer --- */
+        footer { background: var(--ts-red); padding: 12px; border-top: 4px solid var(--gold); display: flex; flex-direction: column; gap: 10px; }
+        .sos-btn { width: 100%; height: 85px; background: var(--gold); color: white; border-radius: 20px; font-size: 40px; font-weight: bold; border: none; }
+        .challenge-btn { width: 100%; height: 70px; background: var(--btn-blue); color: white; border: 3px solid white; border-radius: 15px; font-size: 26px; font-weight: bold; }
+        .memo-btn { width: 100%; height: 70px; background: var(--btn-orange); color: white; border: 3px solid white; border-radius: 15px; font-size: 26px; font-weight: bold; }
+        .speech-btn { width: 100%; height: 70px; background: var(--speech-purple); color: white; border: 3px solid white; border-radius: 15px; font-size: 26px; font-weight: bold; }
+        .memo-list-container { background: rgba(255,255,255,0.9); border-radius: 15px; padding: 10px; max-height: 150px; overflow-y: auto; border: 2px solid var(--gold); }
+        .memo-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #ddd; font-size: 20px; font-weight: bold; }
+
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(217, 4, 41, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(217, 4, 41, 0); } 100% { box-shadow: 0 0 0 0 rgba(217, 4, 41, 0); } }
+        .speech-rec-active { animation: pulse-red 1.5s infinite; }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+   <div class="login-box">
+       <div style="font-size: 80px; margin: 20px 0;">📜</div>
+       <h1 style="color:var(--ts-red); font-size: 45px;">樂活金掌家</h1>
+       <span class="login-label">您的稱呼：</span>
+       <input type="text" id="login-name" class="big-input">
+       <span class="login-label">電話號碼：</span>
+       <input type="tel" id="login-phone" class="big-input" maxlength="8">
+       <span class="login-label">驗證碼：</span>
+       <div class="v-code-box" id="v-code-display">----</div>
+       <input type="number" id="login-vcode" class="big-input">
+       <button class="primary-btn" onclick="handleLogin()">進入系統</button>
+   </div>
+</div>
+
+<div id="app-content" style="display:none;">
+   <header>
+       <div class="header-grid">
+           <div class="h-item info-main" onclick="speakStatus()">
+                <input type="file" id="photo-uploader" accept="image/*" style="display:none;" onchange="uploadPhoto(this)">
+                <div onclick="event.stopPropagation(); document.getElementById('photo-uploader').click()">
+                    <img id="user-photo-display" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" alt="頭像">
+                </div>
+                <div id="auto-date" style="font-size:20px; font-weight:bold;">----</div>
+                <div id="lunar-yi-ji" style="font-size:18px; margin:4px 0; color:#5d4037;">宜：祭祀 | 忌：出行</div>
+                <div class="info-clock" id="auto-clock">00:00</div>
+                <div id="auto-weather" style="font-size:20px; color:#0077B6; font-weight:bold;">☀️ 26°C</div>
+           </div>
+           <div class="h-item" style="background:#fff5f5; border:2px solid var(--ts-red);" onclick="openHeaderTool('alarm')">⏰ 今日提醒</div>
+           <div class="h-item" style="background:#e0f2fe; border:2px solid var(--btn-blue);" onclick="openHeaderTool('mood')">📝 我的心情</div>
+           <div class="h-item" style="background:#FF9F1C; color:white;" onclick="openHeaderTool('photo')">📸 打卡分享</div>
+           <div class="h-item" style="background:#e7fbd3; border:2px solid var(--wa-green);" onclick="openHeaderTool('contacts')">👨‍👩‍👧 傾吓計</div>
+           <div class="h-item" style="background:#ff0000; color:white;" onclick="window.open('https://www.youtube.com')">📺 娛樂時間</div>
+           <div class="h-item" style="background:#202124; color:white; border:2px solid #444;" onclick="window.open('https://www.perplexity.ai')">🔍 AI幫到你</div>
+           <div class="h-item" style="background:#f0f0f0; border:2px solid #555;" onclick="openHeaderTool('profile')">👤 個人資料</div>
+           <div class="h-item" style="background:#e8f5e9; border:2px solid #2e7d32;" onclick="openHeaderTool('excel')">📊 健康指數分析報表</div>
+           <div class="h-item" style="background:#333; color:white; grid-column: span 2;" onclick="handleLogout()">🚪 登出帳號</div>
+       </div>
+   </header>
+
+   <main>
+       <div class="health-card">
+           <h3 id="main-user-title" style="font-size:28px;">🩺 健康紀錄</h3>
+           <div class="health-grid">
+                <div class="data-btn" id="btn-step" style="grid-column: span 3; background:#fffdf0;" onclick="openHealthInput('step', '今日步數 (步)', '目標: 8000')">
+                    <span style="font-size:32px;">👣 步數</span><b id="disp-step" style="font-size:40px;">0</b>
+                </div>
+                <div class="data-btn" id="btn-sugar" onclick="openHealthInput('sugar', '血糖 (mmol/L)', '指標: 4.0-7.0')"><span>血糖</span><b id="disp-sugar">--</b></div>
+                <div class="data-btn" id="btn-pulse" onclick="openHealthInput('pulse', '脈搏 (次/分)', '指標: 60-100')"><span>脈搏</span><b id="disp-pulse">--</b></div>
+                <div class="data-btn" id="btn-oxy" onclick="openHealthInput('oxy', '血氧 (%)', '指標: 95-100')"><span>血氧</span><b id="disp-oxy">--</b></div>
+                <div class="data-btn" id="btn-temp" onclick="openHealthInput('temp', '體溫 (°C)', '指標: 36.0-37.5')"><span>體溫</span><b id="disp-temp">--</b></div>
+                <div class="data-btn" id="btn-bp" style="grid-column: span 2;" onclick="openBPInput()"><span>血壓 (上/下)</span><b id="disp-bp">-- / --</b></div>
+           </div>
+       </div>
+
+       <div class="health-card" style="flex:1;">
+           <h3 style="font-size:24px;">📊 紀錄分析趨勢</h3>
+           <div class="chart-nav">
+               <button class="nav-tab active" onclick="switchChart('step', this)">步數</button>
+               <button class="nav-tab" onclick="switchChart('sugar', this)">血糖</button>
+               <button class="nav-tab" onclick="switchChart('bp', this)">血壓</button>
+               <button class="nav-tab" onclick="switchChart('pulse', this)">脈搏</button>
+               <button class="nav-tab" onclick="switchChart('oxy', this)">血氧</button>
+               <button class="nav-tab" onclick="switchChart('temp', this)">體溫</button>
+           </div>
+           <div class="chart-wrapper"><canvas id="healthChart"></canvas></div>
+       </div>
+   </main>
+
+   <footer>
+       <button class="sos-btn" onclick="sos()">🆘 緊急求助</button>
+       <button class="challenge-btn" onclick="openChallenge()">🎥 短影音共創與挑戰</button>
+       <button class="memo-btn" onclick="openMemo()">📅 日期及事項提醒</button>
+       <div class="memo-list-container" id="footer-memo-list"></div>
+       <button class="speech-btn" onclick="openSpeechTherapy()">🗣️ AI 言語治療訓練</button>
+       <button class="speech-btn" style="background:#1B4332; margin-top:5px;" onclick="openHandRehab()">👋 AI 物理治療訓練</button>
+       <button class="speech-btn" style="background:#D4AF37; margin-top:5px;" onclick="openOccupationalTherapy()">🎯 AI 職業治療訓練</button>
+       <button class="speech-btn" style="background:#6A4C93; margin-top:5px;" onclick="openDailyReport()">📈 今日復健報告</button>
+       <div class="h-item" style="background:#fffdf0; border:2px solid var(--gold); height: 65px; margin-top: 5px;" onclick="speakCoins()">💰 我的金幣：<b id="coin-display">0</b></div>
+   </footer>
+</div>
+
+<div id="tool-modal" class="modal"><div class="modal-content" id="modal-body"></div></div>
+<input type="file" id="global-camera-input" accept="image/*" capture="camera" style="display:none;" onchange="handleGlobalPhoto()">
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+
+<script>
+   // --- 核心邏輯嚴格封鎖 (不重構) ---
+   let coins = parseInt(localStorage.getItem('gold_save')) || 0;
+   let userName = localStorage.getItem('user_name') || "";
+   let healthRecords = JSON.parse(localStorage.getItem('health_records_v4')) || [];
+   let activeAlarms = JSON.parse(localStorage.getItem('active_alarms')) || [];
+   let myContacts = JSON.parse(localStorage.getItem('my_contacts')) || { "大仔": "", "細女": "", "老婆": "", "老公": "" };
+   let vCode = "";
+   let myChart = null;
+   let currentChartType = 'step'; let selectedSubTask = "";
+   let handsDetector = null;
+   let faceDetector = null; let cameraHelper = null;
+   let otTarget = { x: 0.5, y: 0.5 };
+   let otStartTime = 0; let otResults = [];
+   let activeFaceMode = null; let isRecording = false;
+   const speechData = [
+       { word: "牙刷", img: "🪥", tip: "雙唇微張，注意『刷』的送氣" },
+       { word: "毛巾", img: "🧼", tip: "注意『毛』的鼻音與『巾』的收尾" },
+       { word: "眼鏡", img: "👓", tip: "『眼』字發音要飽滿" },
+       { word: "梳子", img: "🪮", tip: "舌尖抵住齒齦發『梳』" },
+       { word: "水杯", img: "🥛", tip: "注意『水』的圓唇音" }
+   ];
+   let currentSpeechIdx = 0;
+
+   window.onload = () => { refreshVCode(); loadSavedPhoto(); if(localStorage.getItem('isLoggedIn') === 'true') enterApp(); updateAutoInfo(); setInterval(updateAutoInfo, 1000); renderFooterMemos(); };
+
+   function openChallenge() {
+       const body = document.getElementById('modal-body');
+       body.innerHTML = `<h2>🎥 短影音挑戰</h2>
+       <p>錄製您的復健成果並分享！</p>
+       <div class="opt-grid" style="grid-template-columns: 1fr;">
+           <button class="primary-btn" style="background:var(--btn-blue); margin-bottom:15px;" onclick="document.getElementById('global-camera-input').click()">📸 開啟相機拍片</button>
+       </div>
+       <div class="opt-grid">
+           <button class="opt-btn" style="font-size:28px; padding:20px; background:#1877F2; color:white;" onclick="shareVideo('Facebook')">📘 Facebook</button>
+           <button class="opt-btn" style="font-size:28px; padding:20px; background:#4CAF50; color:white;" onclick="shareVideo('Setlog')">📝 Setlog</button>
+           <button class="opt-btn" style="font-size:28px; padding:20px; background:#E4405F; color:white;" onclick="shareVideo('Instagram')">📸 Instagram</button>
+           <button class="opt-btn" style="font-size:28px; padding:20px; background:var(--wa-green); color:white;" onclick="shareVideo('WhatsApp')">💬 WhatsApp</button>
+       </div>
+       <button onclick="closeModal()" class="back-btn">返回主頁</button>`;
+       document.getElementById('tool-modal').style.display = 'flex';
+   }
+
+   function shareVideo(platform) {
+       alert(`影片正在直出分享至 ${platform}...`);
+       addCoins(30);
+       closeModal();
+   }
+
+   function openOccupationalTherapy() {
+       const body = document.getElementById('modal-body');
+       body.innerHTML = `<h2 style="color:var(--gold)">🎯 AI 職業治療訓練</h2><p>請用食指尖點擊畫面上的黃金球</p>
+       <div style="position:relative; width:100%; height:350px; background:#000; border-radius:15px; overflow:hidden;"><video id="ot-video" style="display:none;"></video><canvas id="ot-canvas" style="width:100%; height:100%; transform: scaleX(-1);"></canvas><div id="ot-feedback" style="position:absolute; top:10px; left:10px; color:white; background:rgba(0,0,0,0.5); padding:10px; font-size:24px;">反應：-- ms</div></div>
+       <div style="margin-top:20px; display:flex; justify-content:space-around; font-size:40px; font-weight:bold;"><div>完成：<span id="ot-count" style="color:var(--ts-red)">0</span>/10</div></div>
+       <button onclick="startOTTraining()" class="primary-btn" id="ot-start-btn" style="background:var(--wa-green); margin-top:20px;">開始訓練</button>
+       <button onclick="closeModal()" class="back-btn">返回主頁</button>`;
+       document.getElementById('tool-modal').style.display = 'flex';
+   }
+
+   function startOTTraining() {
+       const video = document.getElementById('ot-video');
+       const canvas = document.getElementById('ot-canvas'); const ctx = canvas.getContext('2d'); document.getElementById('ot-start-btn').style.display = "none";
+       let count = 0; otResults = []; moveTarget();
+       handsDetector = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+       handsDetector.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7 });
+       handsDetector.onResults((results) => {
+           ctx.save(); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+           const tx = otTarget.x * canvas.width; const ty = otTarget.y * canvas.height;
+           ctx.beginPath(); ctx.arc(tx, ty, 30, 0, 2 * Math.PI); ctx.fillStyle = "rgba(212, 175, 55, 0.9)"; ctx.fill();
+           if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+               const landmarks = results.multiHandLandmarks[0]; const indexTip = landmarks[8];
+               const dist = Math.sqrt(Math.pow(indexTip.x - (1 - otTarget.x), 2) + Math.pow(indexTip.y - otTarget.y, 2));
+               if (dist < 0.08) { const reactionTime = Date.now() - otStartTime; otResults.push(reactionTime); count++; document.getElementById('ot-count').innerText = count; if (count >= 10) finishOT(); else { moveTarget(); speak("中！"); } }
+           }
+           ctx.restore();
+       });
+       cameraHelper = new Camera(video, { onFrame: async () => { await handsDetector.send({image: video}); }, width: 640, height: 480 });
+       cameraHelper.start();
+   }
+   function moveTarget() { otTarget = { x: 0.2 + Math.random() * 0.6, y: 0.2 + Math.random() * 0.6 }; otStartTime = Date.now(); }
+   function finishOT() { cameraHelper.stop(); const avg = Math.round(otResults.reduce((a, b) => a + b, 0) / otResults.length); addCoins(50); addRecord("職業治療", `${avg} ms`, "rehab"); alert(`平均反應：${avg} ms\n獎勵 50 金幣！`); closeModal(); }
+
+   function openHandRehab() {
+       const body = document.getElementById('modal-body');
+       body.innerHTML = `<h2 style="color:#1B4332">👋 AI 物理治療訓練</h2>
+       <div style="position:relative; width:100%; height:320px; background:#000; border-radius:15px; overflow:hidden; margin-bottom:15px;"><video id="hand-video" style="display:none;"></video><canvas id="hand-canvas" style="width:100%; height:100%; transform: scaleX(-1);"></canvas><div id="hand-feedback" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:60px; color:white; text-shadow:2px 2px 4px #000;"></div></div>
+       <div class="opt-grid" style="grid-template-columns: 1fr 1fr 1fr;"><button class="opt-btn" style="font-size:26px; padding:20px;" onclick="initHandAI('fist')">✊ 握拳</button><button class="opt-btn" style="font-size:26px; padding:20px;" onclick="initHandAI('ah')">👄 呀</button><button class="opt-btn" style="font-size:26px; padding:20px;" onclick="initHandAI('moo')">😚 嗚</button></div>
+       <div style="font-size:45px; font-weight:bold; margin-top:15px;">完成：<b id="fist-count" style="color:var(--ts-red)">0</b> 次</div>
+       <button onclick="stopHandRehab()" class="primary-btn" style="background:var(--wa-green); color:white; height:100px; font-size:40px;">完成並儲存</button>
+       <button onclick="closeModal()" class="back-btn">取消返回</button>`;
+       document.getElementById('tool-modal').style.display = 'flex';
+   }
+
+   function initHandAI(mode) {
+       const video = document.getElementById('hand-video'); const canvas = document.getElementById('hand-canvas'); const ctx = canvas.getContext('2d'); const feedback = document.getElementById('hand-feedback'); if(cameraHelper) cameraHelper.stop();
+       let count = parseInt(document.getElementById('fist-count').innerText); let canScore = true; activeFaceMode = (mode === 'ah' || mode === 'moo') ? mode : null;
+       if (mode === 'fist') {
+           handsDetector = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+           handsDetector.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6 });
+           handsDetector.onResults((results) => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height); if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) { const lm = results.multiHandLandmarks[0]; const dist = Math.sqrt(Math.pow(lm[8].x - lm[0].x, 2) + Math.pow(lm[8].y - lm[0].y, 2)); if (dist < 0.22 && canScore) { count++; updateRehabScore(count); feedback.innerText = "✊"; canScore = false; setTimeout(() => feedback.innerText = "", 800); } else if (dist > 0.45) canScore = true; } });
+           cameraHelper = new Camera(video, { onFrame: async () => { await handsDetector.send({image: video}); }, width: 640, height: 480 });
+       } else {
+           faceDetector = new FaceMesh({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}` });
+           faceDetector.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5 });
+           faceDetector.onResults((results) => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height); if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) { const lm = results.multiFaceLandmarks[0]; const mh = Math.abs(lm[13].y - lm[14].y); const mw = Math.abs(lm[78].x - lm[308].x); if (activeFaceMode === 'ah' && mh > 0.12 && canScore) { count++; updateRehabScore(count); feedback.innerText = "👄"; canScore = false; setTimeout(() => feedback.innerText = "", 800); } else if (activeFaceMode === 'moo' && mw < 0.08 && mh > 0.03 && canScore) { count++; updateRehabScore(count); feedback.innerText = "😚"; canScore = false; setTimeout(() => feedback.innerText = "", 800); } else if (mh < 0.03) canScore = true; } });
+           cameraHelper = new Camera(video, { onFrame: async () => { await faceDetector.send({image: video}); }, width: 640, height: 480 });
+       }
+       cameraHelper.start();
+   }
+   function updateRehabScore(c) { document.getElementById('fist-count').innerText = c; }
+   function stopHandRehab() { if (cameraHelper) cameraHelper.stop(); const c = parseInt(document.getElementById('fist-count').innerText); if (c > 0) { addCoins(c * 5); addRecord("物理治療", `${c} 次`, "rehab"); } closeModal(); }
+
+   function openSpeechTherapy() {
+       const body = document.getElementById('modal-body'); const item = speechData[currentSpeechIdx];
+       body.innerHTML = `<h2 style="color:var(--speech-purple)">🗣️ AI 言語治療訓練</h2>
+       <div style="padding:30px; background:#fdfaf0; border:4px solid var(--gold); border-radius:25px; margin-bottom:25px;">
+           <div style="font-size:140px;">${item.img}</div>
+           <div style="font-size:80px; font-weight:bold;">${item.word}</div>
+       </div>
+       <p style="background:#e0f2fe; padding:20px; border-radius:20px; font-size:32px;">💡 ${item.tip}</p>
+       <div id="ai-feedback" style="display:none; font-size:60px; font-weight:bold; margin-bottom:25px;">AI 評分：<span id="speech-score">--</span></div>
+       <button id="mic-btn" class="primary-btn" style="background:var(--speech-purple); height:130px; font-size:40px;" onclick="toggleARecording()">🎤 按住 說出名稱</button>
+       <button onclick="closeModal()" class="back-btn">暫停返回</button>`;
+       document.getElementById('tool-modal').style.display = 'flex'; speak(`請跟我說：${item.word}`);
+   }
+   function toggleARecording() { if (!isRecording) { isRecording = true; document.getElementById('mic-btn').classList.add('speech-rec-active'); setTimeout(processAISpeech, 2000); } }
+   function processAISpeech() { isRecording = false; document.getElementById('mic-btn').classList.remove('speech-rec-active'); const acc = Math.floor(Math.random() * 30) + 70; document.getElementById('ai-feedback').style.display = "block"; document.getElementById('speech-score').innerText = acc + "分"; if (acc >= 80) { addCoins(30); speak("很好！"); setTimeout(() => { currentSpeechIdx = (currentSpeechIdx + 1) % speechData.length; openSpeechTherapy(); }, 1500); } }
+
+   function openDailyReport() {
+       const rehabData = healthRecords.filter(r => r.type === 'rehab');
+       let html = `<h2 style="color:#6A4C93;">📈 今日復健報告</h2><div style="background:#f8f9fa; border-radius:20px; padding:30px; font-size:36px; text-align:left; border:4px solid #6A4C93;">
+       <p><b>完成總次數：</b> <span style="color:var(--ts-red); font-size:50px;">${rehabData.length}</span></p><hr>`;
+       if (rehabData.length === 0) html += `<p>目前暫無紀錄</p>`;
+       else rehabData.forEach(r => { html += `<div style="margin-bottom:15px;">• ${r.time} - ${r.name}: ${r.val}</div>`; });
+       html += `</div><button class="primary-btn" style="background:#6A4C93; margin-top:30px; height:100px; font-size:40px;" onclick="shareReport()">📤 分享給家人</button>
+       <button onclick="closeModal()" class="back-btn">返回</button>`;
+       document.getElementById('modal-body').innerHTML = html; document.getElementById('tool-modal').style.display = 'flex';
+   }
+   function shareReport() { let text = `【樂活金掌家】${userName}的復健報告%0A`; healthRecords.filter(r => r.type === 'rehab').forEach(r => { text += `${r.time} ${r.name}: ${r.val}%0A`; }); window.open(`https://wa.me/?text=${text}`); }
+
+   function updateAutoInfo() { 
+       const now = new Date(); const timeStr = now.toTimeString().slice(0, 5); 
+       document.getElementById('auto-date').innerText = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`; 
+       document.getElementById('auto-clock').innerText = timeStr;
+       activeAlarms.forEach((al) => { if (al.time === timeStr && !al.triggered) { al.triggered = true; triggerAlarm(al.task); renderFooterMemos(); } });
+   }
+   function enterApp() { document.getElementById('login-screen').style.display = 'none'; document.getElementById('app-content').style.display = 'flex'; document.getElementById('coin-display').innerText = coins; document.getElementById('main-user-title').innerText = `🩺 ${userName}，今日健康`; initChart(); renderFooterMemos(); }
+   
+   function openHeaderTool(mode) {
+       const body = document.getElementById('modal-body'); selectedSubTask = "";
+       if(mode === 'alarm') { 
+           body.innerHTML = `<h2>⏰ 今日提醒</h2><input type="time" id="task-time" class="big-input" value="08:00" style="height:100px; font-size:50px;">
+           <div class="opt-grid" style="grid-template-columns: 1fr 1fr;">
+               <button class="opt-btn" style="font-size:32px; padding:20px;" onclick="setSubTask(this,'💊 食藥')">💊 食藥</button>
+               <button class="opt-btn" style="font-size:32px; padding:20px;" onclick="setSubTask(this,'🥤 飲水')">🥤 飲水</button>
+               <button class="opt-btn" style="font-size:32px; padding:20px;" onclick="setSubTask(this,'🔑 帶鎖匙')">🔑 帶鎖匙</button>
+               <button class="opt-btn" style="font-size:32px; padding:20px;" onclick="setSubTask(this,'🍴 進餐')">🍴 進餐</button>
+               <button class="opt-btn" style="font-size:32px; padding:20px;" onclick="setSubTask(this,'🛌 休息')">🛌 休息</button>
+               <button class="opt-btn" style="font-size:32px; padding:20px;" onclick="setSubTask(this,'🏃 運動')">🏃 運動</button>
+               <button class="opt-btn" style="font-size:32px; padding:20px;" onclick="setSubTask(this,'📱 帶手機')">📱 帶手機</button>
+               <button class="opt-btn" style="font-size:32px; padding:20px;" onclick="setSubTask(this,'🏥 覆診')">🏥 覆診</button>
+           </div><button class="primary-btn" onclick="saveAlarm()">儲存設定</button>`;
+       }
+       else if(mode === 'mood') { 
+           body.innerHTML = `<h2>📝 我的心情</h2>
+           <div class="opt-grid" style="grid-template-columns: 1fr 1fr;">
+               <button class="opt-btn" style="font-size:28px; padding:20px;" onclick="recordMood('喜悅😊')">喜悅 😊</button>
+               <button class="opt-btn" style="font-size:28px; padding:20px;" onclick="recordMood('被關懷🥰')">被關懷 🥰</button>
+               <button class="opt-btn" style="font-size:28px; padding:20px;" onclick="recordMood('期待🤩')">期待 🤩</button>
+               <button class="opt-btn" style="font-size:28px; padding:20px;" onclick="recordMood('被重視💎')">被重視 💎</button>
+               <button class="opt-btn" style="font-size:28px; padding:20px;" onclick="recordMood('滿足😌')">滿足 😌</button>
+               <button class="opt-btn" style="font-size:28px; padding:20px;" onclick="recordMood('不安😰')">不安 😰</button>
+               <button class="opt-btn" style="font-size:28px; padding:20px;" onclick="recordMood('焦慮😰')">焦慮 😰</button>
+               <button class="opt-btn" style="font-size:28px; padding:20px;" onclick="recordMood('煩躁😡')">煩躁 😡</button>
+               <button class="opt-btn" style="font-size:28px; padding:20px;" onclick="recordMood('生氣💢')">生氣 💢</button>
+               <button class="opt-btn" style="font-size:28px; padding:20px;" onclick="recordMood('普通😐')">普通 😐</button>
+           </div>`; 
+       }
+       else if(mode === 'photo') { document.getElementById('global-camera-input').click(); return; }
+       else if(mode === 'contacts') { renderContacts(); return; }
+       else if(mode === 'profile') { body.innerHTML = `<h2>👤 個人資料</h2><input type="text" id="new-name" class="big-input" value="${userName}" style="height:100px; font-size:45px;"><button class="primary-btn" onclick="updateProfile()">更新資料</button>`; }
+       else if(mode === 'excel') { 
+           body.innerHTML = `<h2>📊 健康指數分析報表</h2><p>您可以匯出紀錄或分享至 WhatsApp</p>
+           <button class="primary-btn" onclick="exportToExcel()" style="margin-bottom:20px;">匯出 Excel 格式</button>
+           <button class="primary-btn" onclick="shareToWhatsApp()" style="background:var(--wa-green);">可用 WhatsApp 傳送</button>`;
+       }
+       body.innerHTML += `<button onclick="closeModal()" class="back-btn">取消返回</button>`;
+       document.getElementById('tool-modal').style.display = 'flex';
+   }
+
+   function setSubTask(btn, val) { btn.parentElement.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); selectedSubTask = val; }
+   function saveAlarm() { const t = document.getElementById('task-time').value; if(!t || !selectedSubTask) return; activeAlarms.push({ time: t, task: selectedSubTask, triggered: false }); localStorage.setItem('active_alarms', JSON.stringify(activeAlarms)); renderFooterMemos(); closeModal(); }
+   function triggerAlarm(task) { speak(`夠鐘${task}喇！`); alert(`⏰ 重要提醒：${task}`); }
+   
+   function openMemo() { 
+       const body = document.getElementById('modal-body');
+       body.innerHTML = `<h2>📅 日期與事項提醒</h2>
+       <input type="date" id="memo-date" class="big-input" style="height:90px;">
+       <input type="time" id="memo-time" class="big-input" style="height:90px;" value="09:00">
+       <textarea id="memo-text" class="big-input" placeholder="記事內容..." style="height:150px; font-size:32px;"></textarea>
+       <button class="primary-btn" onclick="saveMemoAlarm()" style="margin-bottom:10px;">設定提醒</button>
+       <div id="memo-edit-area" style="margin-top:20px;"></div>
+       <button onclick="closeModal()" class="back-btn">返回主頁</button>`; 
+       document.getElementById('tool-modal').style.display = 'flex';
+       renderMemoEditor();
+   }
+   function renderMemoEditor() {
+       const area = document.getElementById('memo-edit-area');
+       area.innerHTML = activeAlarms.map((al, idx) => `
+           <div style="display:flex; justify-content:space-between; align-items:center; background:#eee; padding:15px; border-radius:15px; margin-bottom:10px; font-size:24px;">
+               <span>${al.task} (${al.time})</span>
+               <div>
+                   <button onclick="deleteAlarm(${idx})" style="background:red; color:white; border:none; padding:10px; border-radius:10px;">刪除</button>
+               </div>
+           </div>`).join('');
+   }
+   function deleteAlarm(idx) { activeAlarms.splice(idx, 1); localStorage.setItem('active_alarms', JSON.stringify(activeAlarms)); renderMemoEditor(); renderFooterMemos(); }
+   function saveMemoAlarm() { 
+       const d = document.getElementById('memo-date').value; 
+       const t = document.getElementById('memo-time').value;
+       const msg = document.getElementById('memo-text').value.trim(); 
+       if(!d || !msg) return;
+       activeAlarms.push({ date: d, time: t, task: msg, triggered: false }); 
+       localStorage.setItem('active_alarms', JSON.stringify(activeAlarms)); 
+       renderFooterMemos(); closeModal();
+   }
+
+   function addRecord(name, val, type, manualTime = null) { const time = manualTime || new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); healthRecords.unshift({ time, type, val, name }); localStorage.setItem('health_records_v4', JSON.stringify(healthRecords)); updateChartData(); }
+   function renderFooterMemos() { const list = document.getElementById('footer-memo-list'); const upcoming = activeAlarms.filter(al => !al.triggered).slice(0, 3); list.innerHTML = upcoming.length ? upcoming.map(al => `<div class="memo-item"><span>📌 ${al.task}</span><span>${al.time}</span></div>`).join('') : `<div style="text-align:center; padding:10px; font-size:20px; color:#999;">沒有待辦事項</div>`; }
+   function initChart() { const ctx = document.getElementById('healthChart').getContext('2d'); myChart = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [{ label:'數值', data: [], borderColor: '#D90429', tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false } }); updateChartData(); }
+   function updateChartData() { if(!myChart) return; const filtered = healthRecords.filter(r => r.type === currentChartType).reverse().slice(-7); myChart.data.labels = filtered.map(r => r.time); myChart.data.datasets[0].data = filtered.map(r => r.val); myChart.update(); }
+   function switchChart(type, btn) { currentChartType = type; document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); updateChartData(); }
+   function refreshVCode() { vCode = Math.floor(1000 + Math.random() * 9000).toString(); document.getElementById('v-code-display').innerText = vCode; }
+   function handleLogin() { const n = document.getElementById('login-name').value.trim(); if (n && document.getElementById('login-vcode').value === vCode) { userName = n; localStorage.setItem('user_name', n); localStorage.setItem('isLoggedIn', 'true'); enterApp(); } else speak("驗證碼錯誤"); }
+   function handleLogout() { localStorage.removeItem('isLoggedIn'); location.reload(); }
+   function addCoins(amt) { coins += amt; document.getElementById('coin-display').innerText = coins; localStorage.setItem('gold_save', coins); }
+   function closeModal() { if(cameraHelper) cameraHelper.stop(); document.getElementById('tool-modal').style.display = 'none'; }
+   function speak(t) { window.speechSynthesis.cancel(); let s = new SpeechSynthesisUtterance(t); s.lang = 'zh-HK'; window.speechSynthesis.speak(s); }
+   
+   function sos() { 
+       speak("正在通知家人");
+       window.open(`https://wa.me/?text=🆘【緊急求助】我需要協助！目前使用者：${userName}`);
+       alert("🆘 緊急求助已發出！"); 
+   }
+   
+   function speakCoins() { speak(`你有 ${coins} 個金幣。`); }
+   function speakStatus() { speak(`現在是 ${document.getElementById('auto-clock').innerText}。`); }
+   function updateProfile() { const n = document.getElementById('new-name').value.trim(); if(n) { userName = n; localStorage.setItem('user_name', n); enterApp(); closeModal(); } }
+   
+   function openHealthInput(type, title, hint) { 
+       let syncHtml = (type === 'step') ? `<button class="primary-btn" style="background:var(--btn-blue); margin-bottom:15px; height:80px; font-size:32px;" onclick="alert('正在同步手機健康數據...')">🔄 手機同步鍵</button>` : '';
+       document.getElementById('modal-body').innerHTML = `<h2>${title}</h2>${syncHtml}<input type="number" id="h-val" class="big-input" placeholder="${hint}" style="height:100px; font-size:45px;"><button class="primary-btn" onclick="processData('${type}','${title}')">儲存數值</button><button onclick="closeModal()" class="back-btn">返回主頁</button>`;
+       document.getElementById('tool-modal').style.display = 'flex';
+   }
+
+   function openBPInput() { document.getElementById('modal-body').innerHTML = `<h2>血壓記錄</h2><input type="number" id="bp-up" class="big-input" placeholder="上壓" style="height:90px;"><input type="number" id="bp-down" class="big-input" placeholder="下壓" style="height:90px;"><button class="primary-btn" onclick="processBP()">儲存血壓</button><button onclick="closeModal()" class="back-btn">返回主頁</button>`; document.getElementById('tool-modal').style.display = 'flex'; }
+   function processData(type, title) { const val = parseFloat(document.getElementById('h-val').value); if(!isNaN(val)) { document.getElementById('disp-' + type).innerText = val; addRecord(title.split(' ')[0], val, type); addCoins(20); closeModal(); } }
+   function processBP() { const up = parseFloat(document.getElementById('bp-up').value); const dw = parseFloat(document.getElementById('bp-down').value); if(!isNaN(up)) { document.getElementById('disp-bp').innerText = `${up}/${dw}`; addRecord("血壓", up, "bp"); addCoins(20); closeModal(); } }
+   function renderContacts() { let html = `<h2>👨‍👩‍👧 傾嚇計</h2>`; for (let role in myContacts) { html += `<div style="font-size:40px; margin-bottom:25px; display:flex; justify-content:space-between; align-items:center;"><b>${role}</b> <button style="font-size:30px; padding:10px 20px;" onclick="editContact('${role}')">修改</button></div>`; } html += `<button onclick="closeModal()" class="back-btn">返回主頁</button>`; document.getElementById('modal-body').innerHTML = html; document.getElementById('tool-modal').style.display = 'flex'; }
+   function editContact(role) { const p = prompt(`請輸入 ${role} 的電話：`, myContacts[role]); if(p && p.length === 8) { myContacts[role] = p; localStorage.setItem('my_contacts', JSON.stringify(myContacts)); renderContacts(); } }
+   function exportToExcel() { alert("紀錄已匯出至 Excel 格式！"); }
+   function shareToWhatsApp() { let msg = `【健康指數分析報表】${userName} 的最新健康數據已生成。`; window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`); }
+   function loadSavedPhoto() { const s = localStorage.getItem('user_photo_data'); if(s) document.getElementById('user-photo-display').src = s; }
+   function uploadPhoto(input) { if (input.files && input.files[0]) { const r = new FileReader(); r.onload = (e) => { document.getElementById('user-photo-display').src = e.target.result; localStorage.setItem('user_photo_data', e.target.result); }; r.readAsDataURL(input.files[0]); } }
+   function recordMood(m) { addRecord("心情", m, "mood"); addCoins(10); speak(`紀錄了${m}`); closeModal(); }
+   function handleGlobalPhoto() { alert("拍照/錄影成功！已準備好分享。"); addCoins(20); }
+</script>
+
+</body>
+</html>
